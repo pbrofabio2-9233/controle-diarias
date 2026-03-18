@@ -1,0 +1,79 @@
+:root {
+    /* Tema Claro (Padrão) */
+    --primary: #2563eb;       
+    --primary-light: #e0f2fe; 
+    --success: #22c55e;       
+    --danger: #ef4444;        
+    --warning: #f59e0b;       
+    
+    --bg-color: #f8fafc;      
+    --card-bg: #ffffff;       
+    --text-main: #1e293b;     
+    --text-muted: #64748b;    
+    --border-color: #e2e8f0;     
+
+    --radius: 12px;
+    --radius-full: 50px;
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+/* Modo Noturno */
+.theme-dark {
+    --primary: #3b82f6;       
+    --primary-light: #1e3a8a; 
+    --success: #22c55e;
+    --danger: #f87171;
+    
+    --bg-color: #0f172a;      /* Fundo muito escuro */
+    --card-bg: #1e293b;       /* Cards escuros */
+    --text-main: #f8fafc;     /* Texto claro */
+    --text-muted: #94a3b8;    
+    --border-color: #334155;  /* Bordas escuras */
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
+}
+
+/* Modo Rosa */
+.theme-pink {
+    --primary: #db2777;       
+    --primary-light: #fce7f3; 
+    --success: #16a34a;       
+    --danger: #dc2626;        
+    
+    --bg-color: #fff1f2;      /* Fundo rosinha */
+    --card-bg: #ffffff;       
+    --text-main: #500724;     
+    --text-muted: #9d174d;    
+    --border-color: #fbcfe8;  
+}
+
+* {
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    width: 100vw; height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 90px;
+    transition: background-color 0.3s ease, color 0.3s ease; /* Troca de tema suave */
+}
+
+/* Ajustes Globais de Inputs para obedecerem aos temas */
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--primary); }
+
+h2 { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+h3 { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }

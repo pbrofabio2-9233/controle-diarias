@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle de Diárias Pro</title>
+    
+    <link rel="stylesheet" href="css/global.css?v=5">
+    <link rel="stylesheet" href="css/layout.css?v=5">
+    <link rel="stylesheet" href="css/components.css?v=5">
+</head>
+<body>
+
+    <header id="main-header">
+        <div class="summary-card">
+            <small>Saldo Líquido • Carregando...</small>
+            <h2 id="total-profit">R$ 0,00</h2>
+            <div class="header-details">
+                <span class="detail-green">⬆ <span id="total-income">R$ 0,00</span></span>
+                <span class="detail-red">⬇ <span id="total-expenses">R$ 0,00</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-content"></main>
+
+    <nav class="bottom-nav">
+        <button onclick="app.navigate('calendar')" class="nav-item active" id="nav-calendar">📅</button>
+        <button onclick="app.navigate('list')" class="nav-item" id="nav-list">💼</button>
+        <button onclick="app.navigate('dashboard')" class="nav-item" id="nav-dashboard">📊</button>
+        <button onclick="app.navigate('settings')" class="nav-item" id="nav-settings">⚙️</button>
+    </nav>
+
+    <div id="modal-container" class="modal hidden"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script src="js/storage.js?v=5"></script>
+    <script src="js/ui.js?v=5"></script>
+    <script src="js/modules.js?v=5"></script>
+    <script src="js/core.js?v=5"></script>
+    <script src="js/main.js?v=5"></script>
+</body>
+</html>
