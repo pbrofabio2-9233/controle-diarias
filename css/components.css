@@ -1,12 +1,14 @@
-/* Modal Anti-Fuga e Anti-Toque Fantasma */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: flex-end; z-index: 1000; touch-action: none; }
+/* Modal Anti-Fuga e Responsivo Centro */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; touch-action: none; }
 .modal.hidden { display: none; }
+
+/* No telemóvel sobe de baixo, colado no ecrã */
 .modal-content { background: var(--card-bg); width: 100%; max-height: 85vh; overflow-y: auto; padding: 25px 20px 40px 20px; border-radius: 25px 25px 0 0; position: relative; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-.btn-close-modal { position: absolute; top: 15px; right: 15px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); width: 35px; height: 35px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-close-modal { position: absolute; top: 15px; right: 15px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); width: 35px; height: 35px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
 
-.modal-header h3 { margin-bottom: 2px; }
+.modal-header h3 { margin-bottom: 2px; padding-right: 40px; }
 .modal-header p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
 
 /* Status Moderno */
@@ -32,6 +34,7 @@
 
 .btn-save { width: 100%; padding: 16px; background: var(--success); color: white; border: none; border-radius: var(--radius); font-size: 1.1rem; font-weight: bold; cursor: pointer;}
 .btn-clear { margin-top: 15px; background: transparent; color: var(--danger); border: 1px solid var(--danger); width: 100%; padding: 15px; border-radius: var(--radius); font-weight: bold; cursor: pointer;}
+.btn-danger-solid { background: var(--danger); color: white; border: none; width: 100%; padding: 15px; border-radius: var(--radius); font-weight: bold; cursor: pointer; margin-top: 15px; }
 
 /* Mini Calendário Transferência */
 .transfer-calendar { display: none; background: var(--card-bg); border: 1px solid var(--primary); border-radius: var(--radius); padding: 15px; margin-bottom: 20px; }
@@ -44,8 +47,8 @@
 .t-day.past { opacity: 0.3; }
 .t-day.empty { border: none; background: transparent; }
 
-/* Configurações (MENU HUB) */
-.settings-container { padding: 15px; }
+/* Configurações, Listas e Dashboard */
+.settings-container { padding: 15px; max-width: 800px; margin: 0 auto; }
 .settings-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 15px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s, background 0.2s; }
 .settings-card.clickable { cursor: pointer; }
 .settings-card.clickable:active { transform: scale(0.98); background: var(--bg-color); }
@@ -55,11 +58,10 @@
 .card-info-text small { color: var(--text-muted); }
 .card-arrow { color: var(--text-muted); font-weight: bold; font-size: 1.2rem; }
 
-/* Lista de Empregos e Backups no Modal */
 .job-item-card, .backup-item-card { background: var(--bg-color); border: 1px solid var(--border-color); border-left: 5px solid var(--primary); padding: 15px; border-radius: var(--radius); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
 .job-item-card { cursor: pointer; }
 .job-item-card:active { transform: scale(0.98); }
-.backup-item-card { border-left-color: var(--warning); cursor: default; } /* Backup agora tem botões separados */
+.backup-item-card { border-left-color: var(--warning); cursor: default; }
 .btn-new-job { background: transparent; border: 2px dashed var(--primary); color: var(--primary); width: 100%; padding: 15px; border-radius: var(--radius); font-weight: bold; cursor: pointer; margin-bottom: 20px; }
 
 .form-group { margin-bottom: 15px; }
@@ -69,7 +71,7 @@
 .theme-radio input { display: none; }
 .theme-radio:has(input:checked) { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
 
-/* Filtros e Histórico */
+.list-container { max-width: 800px; margin: 0 auto; }
 .month-filter-nav { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; box-shadow: var(--shadow); }
 .month-filter-nav button { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); width: 35px; height: 35px; border-radius: 50%; font-weight: bold; cursor: pointer;}
 .month-filter-nav span { font-weight: bold; text-transform: capitalize; color: var(--primary); }
@@ -81,13 +83,10 @@
 .card-diaria.planned { border-left-color: var(--primary); }
 .card-diaria.transferred { border-left-color: var(--warning); opacity: 0.8; } 
 
-/* GARANTIA DE COR NO CALENDÁRIO PARA "TRANSFERIDO" */
-.day-cell.transferred { background-color: var(--warning) !important; color: white !important; border: none !important; }
-
 .card-values { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 10px; }
 .btn-export-pdf { background: var(--text-main); color: var(--card-bg); border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; width: 100%; margin-bottom: 20px; cursor: pointer; display: flex; justify-content: center; gap: 8px;}
 
-/* Dashboard */
+.dashboard-container { max-width: 800px; margin: 0 auto; }
 .dashboard-card { background: var(--card-bg); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; }
 .progress-bar-bg { width: 100%; height: 25px; background-color: var(--bg-color); border-radius: 50px; overflow: hidden; border: 1px solid var(--border-color); }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); }
@@ -95,3 +94,33 @@
 .stat-box { background: var(--bg-color); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
 .stat-box h4 { color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px; }
 .stat-box span { font-size: 1.5rem; font-weight: bold; color: var(--text-main); }
+
+/* BARRA FLUTUANTE DO MODO DE LARGA ESCALA */
+.bulk-action-bar {
+    position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 550px;
+    background: var(--card-bg); padding: 15px; border-radius: var(--radius); box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+    display: flex; align-items: center; justify-content: space-between; z-index: 900; border: 2px solid var(--primary);
+    animation: slideUp 0.3s;
+}
+.bulk-info strong { display: block; color: var(--text-main); }
+.bulk-info small { color: var(--text-muted); }
+.bulk-actions-wrapper { display: flex; gap: 10px; align-items: center; }
+.bulk-btn { background: var(--success); color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+/* REGRAS DE MODAIS NO COMPUTADOR (DASHBOARD PROFISSIONAL) */
+@media (min-width: 800px) {
+    /* Modal flutua no centro do ecrã */
+    .modal { align-items: center; justify-content: center; padding: 20px; }
+    .modal-content { 
+        max-width: 550px; 
+        border-radius: 20px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        max-height: 90vh;
+        animation: fadeInScale 0.2s ease-out;
+    }
+    
+    @keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    
+    .bulk-action-bar { bottom: 30px; }
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
