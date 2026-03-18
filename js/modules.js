@@ -13,6 +13,8 @@ const Modules = {
     calendar: {
         selectedStatus: 'worked',
         tempExpenses: [], 
+        isMultiSelectMode: false,
+        selectedDays: new Set(),
         
         render() {
             const container = document.getElementById('app-content');
@@ -21,7 +23,19 @@ const Modules = {
             for (let i = -1; i <= 3; i++) {
                 this.renderMonth(now.getFullYear(), now.getMonth() + i);
             }
-            setTimeout(() => this.setupScrollObserver(), 150);
+            
+            setTimeout(() => {
+                this.setupScrollObserver();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const currentMonthEl = document.querySelector(`[data-year-month="${currentMonthKey}"]`);
+                if (currentMonthEl) {
+                    currentMonthEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                app.state.visibleMonth = currentMonthKey;
+                this.updateHeaderStats();
+            }, 150);
+
+            this.renderBulkActionBar();
         },
 
         setupScrollObserver() {
@@ -33,11 +47,40 @@ const Modules = {
                         if (app.state.visibleMonth !== visibleMonth) {
                             app.state.visibleMonth = visibleMonth;
                             app.updateSummary();
+                            Modules.calendar.updateHeaderStats();
                         }
                     }
                 });
             }, observerOptions);
             document.querySelectorAll('.month-section').forEach(sec => observer.observe(sec));
+        },
+
+        updateHeaderStats() {
+            const entries = app.state.data.entries || {};
+            let worked = 0; let off = 0;
+            const visibleMonth = app.state.visibleMonth || new Date().toISOString().slice(0, 7);
+            
+            Object.keys(entries).forEach(dateKey => {
+                if (dateKey.startsWith(visibleMonth)) {
+                    if (entries[dateKey].status === 'worked') worked++;
+                    if (entries[dateKey].status === 'off') off++;
+                }
+            });
+
+            const badgesContainer = document.getElementById('header-stats-badges');
+            const monthLabel = document.getElementById('header-month-label');
+            
+            if (monthLabel) {
+                const [y, m] = visibleMonth.split('-');
+                const mName = new Date(y, m-1, 1).toLocaleString('pt-br', { month: 'long', year: 'numeric' });
+                monthLabel.innerText = mName;
+            }
+            if (badgesContainer) {
+                badgesContainer.innerHTML = `
+                    <span style="color: #86efac; font-weight: bold; padding: 0 10px;">✔️ ${worked} Trabalhados</span>
+                    <span style="color: #fca5a5; font-weight: bold; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 10px;">🏖️ ${off} Folgas</span>
+                `;
+            }
         },
 
         renderMonth(year, month) {
@@ -48,7 +91,17 @@ const Modules = {
             const monthCard = document.createElement('div');
             monthCard.className = 'month-section';
             monthCard.dataset.yearMonth = `${yearNum}-${String(month + 1).padStart(2, '0')}`;
-            monthCard.innerHTML = `<h3 class="month-title">${monthName} <small>${yearNum}</small></h3><div class="calendar-grid" id="grid-${yearNum}-${month}"></div>`;
+            
+            monthCard.innerHTML = `
+                <div class="month-header-wrapper">
+                    <h3 class="month-title">${monthName} <small>${yearNum}</small></h3>
+                    <button class="btn-multi-select" onclick="Modules.calendar.toggleMultiSelect()">✓ Selecionar Vários</button>
+                </div>
+                <div class="weekdays-grid">
+                    <div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
+                </div>
+                <div class="calendar-grid" id="grid-${yearNum}-${month}"></div>
+            `;
             document.getElementById('calendar-scroll-container').appendChild(monthCard);
             this.fillDays(yearNum, month);
         },
@@ -63,7 +116,15 @@ const Modules = {
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const statusClass = this.getSmartDayStatus(year, month, day, dateKey);
-                grid.innerHTML += `<div class="day-cell ${statusClass}" onclick="Modules.calendar.openDay('${dateKey}', '${statusClass}')">${day}</div>`;
+                
+                const entry = app.state.data.entries[dateKey];
+                let microHtml = '';
+                if (entry) {
+                    if (parseFloat(entry.value) > 0) microHtml += `<span class="micro-text-val">R$</span>`;
+                    if (parseFloat(entry.expenses) > 0) microHtml += `<div class="micro-dot-expense"></div>`;
+                }
+
+                grid.innerHTML += `<div id="day-cell-${dateKey}" class="day-cell ${statusClass}" onclick="Modules.calendar.openDay('${dateKey}', '${statusClass}')">${day}${microHtml}</div>`;
             }
         },
 
@@ -93,22 +154,92 @@ const Modules = {
             return '';
         },
 
+        toggleMultiSelect() {
+            this.isMultiSelectMode = !this.isMultiSelectMode;
+            this.selectedDays.clear();
+            document.querySelectorAll('.day-cell').forEach(el => el.classList.remove('multi-selected'));
+            this.renderBulkActionBar();
+        },
+
+        toggleDaySelection(dateKey) {
+            const cell = document.getElementById(`day-cell-${dateKey}`);
+            if (!cell) return;
+            if (this.selectedDays.has(dateKey)) {
+                this.selectedDays.delete(dateKey);
+                cell.classList.remove('multi-selected');
+            } else {
+                this.selectedDays.add(dateKey);
+                cell.classList.add('multi-selected');
+            }
+            this.renderBulkActionBar();
+        },
+
+        renderBulkActionBar() {
+            let bar = document.getElementById('bulk-action-bar');
+            if (!this.isMultiSelectMode) {
+                if (bar) bar.remove();
+                return;
+            }
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'bulk-action-bar';
+                bar.className = 'bulk-action-bar';
+                document.body.appendChild(bar);
+            }
+            bar.innerHTML = `
+                <div class="bulk-info">
+                    <strong>${this.selectedDays.size} dias selecionados</strong>
+                    <small>Marcar como Trabalhados</small>
+                </div>
+                <div class="bulk-actions-wrapper">
+                    <button class="bulk-btn" onclick="Modules.calendar.confirmBulkAction()" ${this.selectedDays.size === 0 ? 'disabled style="opacity:0.5"' : ''}>Confirmar</button>
+                    <button class="btn-clear" style="margin:0; padding:10px;" onclick="Modules.calendar.toggleMultiSelect()">✕</button>
+                </div>
+            `;
+        },
+
+        confirmBulkAction() {
+            if (this.selectedDays.size === 0) return;
+            
+            const jobs = app.state.data.jobs || [{ baseSalary: 0 }];
+            const mainJob = jobs[0];
+            const now = new Date();
+            const stats = Modules.settings.getWorkDaysStats(now.getFullYear(), now.getMonth(), mainJob.scaleType, mainJob.scaleStart);
+            const dailyRate = mainJob.baseSalary > 0 ? (parseFloat(mainJob.baseSalary) / (stats.full || 1)) : 0;
+
+            this.selectedDays.forEach(dateKey => {
+                const entry = app.state.data.entries[dateKey] || { expenses: 0, expensesList: [] };
+                // Correção matemática aqui também
+                const val = entry.value !== undefined && entry.value !== '' ? parseFloat(entry.value) : dailyRate;
+                Storage.saveEntry(dateKey, { status: 'worked', value: val, expenses: parseFloat(entry.expenses || 0), expensesList: entry.expensesList });
+            });
+
+            app.state.data = Storage.getData();
+            this.toggleMultiSelect();
+            app.navigate('calendar');
+        },
+
         openDay(dateKey, projectedStatus) {
-            const entry = app.state.data.entries[dateKey] || { status: projectedStatus, value: '', expensesList: [] };
-            this.selectedStatus = entry.status || 'worked'; 
+            if (this.isMultiSelectMode) {
+                this.toggleDaySelection(dateKey);
+                return;
+            }
+
+            const entry = app.state.data.entries[dateKey] || { status: null, value: '', expensesList: [] };
+            this.selectedStatus = entry.status ? entry.status : 'worked'; 
             this.tempExpenses = entry.expensesList ? [...entry.expensesList] : []; 
             
             const jobs = app.state.data.jobs || [{ baseSalary: 0 }];
             const mainJob = jobs[0];
             const [year, month] = dateKey.split('-');
             const stats = Modules.settings.getWorkDaysStats(year, month - 1, mainJob.scaleType, mainJob.scaleStart);
-            const dailyRate = mainJob.baseSalary > 0 ? (mainJob.baseSalary / (stats.full || 1)).toFixed(2) : '';
+            const dailyRate = mainJob.baseSalary > 0 ? (parseFloat(mainJob.baseSalary) / (stats.full || 1)).toFixed(2) : '';
 
             const html = `
                 <button class="btn-close-modal" onclick="UI.closeModal()">✕</button>
                 <div class="modal-header">
                     <h3>${dateKey.split('-').reverse().join('/')}</h3>
-                    <p>Registro de Diária</p>
+                    <p>Registo de Diária</p>
                 </div>
 
                 <div class="status-selector">
@@ -121,7 +252,7 @@ const Modules = {
                 <div class="row-compact">
                     <div class="form-group">
                         <label>Valor Bruto (R$)</label>
-                        <input type="number" id="input-value" value="${entry.value || dailyRate}" step="0.01" placeholder="${dailyRate}">
+                        <input type="number" id="input-value" value="${entry.value !== '' ? parseFloat(entry.value).toFixed(2) : dailyRate}" step="0.01" placeholder="${dailyRate}">
                     </div>
                     ${this.selectedStatus !== 'transferred' ? `<button class="btn-icon" onclick="Modules.calendar.toggleTransferCalendar('${dateKey}')">🔁 Transferir</button>` : ''}
                 </div>
@@ -142,7 +273,7 @@ const Modules = {
                 </div>
 
                 <button class="btn-save" onclick="Modules.calendar.saveDay('${dateKey}')">Salvar Alterações</button>
-                <button class="btn-clear" onclick="Modules.calendar.clearDay('${dateKey}')">🗑️ Remover Registro</button>
+                <button class="btn-clear" onclick="Modules.calendar.clearDay('${dateKey}')">🗑️ Remover Registo</button>
             `;
             UI.openModal(html);
             this.renderTempExpenses(); 
@@ -179,10 +310,10 @@ const Modules = {
                 container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Nenhuma despesa lançada.</p>';
             } else {
                 this.tempExpenses.forEach((exp, i) => {
-                    total += exp.value;
+                    total += parseFloat(exp.value || 0);
                     container.innerHTML += `
                         <div class="expense-item"><span>${exp.desc}</span>
-                        <div><strong>R$ ${exp.value.toFixed(2)}</strong> <button onclick="Modules.calendar.removeTempExpense(${i})">✕</button></div></div>
+                        <div><strong>R$ ${parseFloat(exp.value || 0).toFixed(2)}</strong> <button onclick="Modules.calendar.removeTempExpense(${i})">✕</button></div></div>
                     `;
                 });
             }
@@ -250,7 +381,7 @@ const Modules = {
         saveDay(dateKey) {
             const value = parseFloat(document.getElementById('input-value').value) || 0;
             const expensesList = [...this.tempExpenses];
-            const expensesTotal = expensesList.reduce((acc, curr) => acc + curr.value, 0);
+            const expensesTotal = expensesList.reduce((acc, curr) => acc + parseFloat(curr.value || 0), 0);
             
             Storage.saveEntry(dateKey, { status: this.selectedStatus, value, expenses: expensesTotal, expensesList });
             app.state.data = Storage.getData();
@@ -267,7 +398,6 @@ const Modules = {
             app.navigate(app.state.currentView);
         }
     },
-
     // --- MÓDULO DE LISTA E EXPORTAÇÃO PDF ---
     list: {
         render() {
@@ -282,7 +412,7 @@ const Modules = {
 
             let html = `
                 <div class="list-container">
-                    <button class="btn-export-pdf" onclick="Modules.list.exportPDF('${filterMonth}')">📄 Exportar Fechamento de ${monthName}</button>
+                    <button class="btn-export-pdf" onclick="Modules.list.exportPDF('${filterMonth}')">📄 Exportar Fecho de ${monthName}</button>
 
                     <div class="month-filter-nav">
                         <button onclick="Modules.changeFilterMonth(-1, 'list')">←</button>
@@ -295,15 +425,17 @@ const Modules = {
                 .filter(date => date.startsWith(filterMonth))
                 .sort((a, b) => new Date(b) - new Date(a));
 
-            if (sortedDates.length === 0) html += `<p class="empty-msg">Nenhum registro encontrado.</p>`;
+            if (sortedDates.length === 0) html += `<p class="empty-msg">Nenhum registo encontrado.</p>`;
 
             sortedDates.forEach(date => {
                 const item = entries[date];
                 const statusValue = item.status || 'worked'; 
                 
-                const net = (item.value || 0) - (item.expenses || 0);
-                let badgeClass = net >= 0 ? 'high-profit' : 'loss';
+                const val = parseFloat(item.value || 0);
+                const exp = parseFloat(item.expenses || 0);
+                const net = val - exp;
                 
+                let badgeClass = net >= 0 ? 'high-profit' : 'loss';
                 const labelPT = statusTranslate[statusValue] || statusValue.toUpperCase();
 
                 html += `
@@ -313,8 +445,8 @@ const Modules = {
                             <span class="card-status-label">${labelPT.toUpperCase()}</span>
                         </div>
                         <div class="card-values">
-                            <div><small>Bruto:</small> <b>R$ ${(item.value || 0).toFixed(2)}</b></div>
-                            <div><small>Gastos:</small> <b class="text-danger">R$ ${(item.expenses || 0).toFixed(2)}</b></div>
+                            <div><small>Bruto:</small> <b>R$ ${val.toFixed(2)}</b></div>
+                            <div><small>Gastos:</small> <b class="text-danger">R$ ${exp.toFixed(2)}</b></div>
                             <div class="card-net"><small>Líquido:</small> <span class="${badgeClass}">R$ ${net.toFixed(2)}</span></div>
                         </div>
                     </div>
@@ -334,7 +466,7 @@ const Modules = {
             const jobs = app.state.data.jobs || [{ baseSalary: 1, scaleType: 'none', scaleStart: '' }];
             const mainJob = jobs[0];
             const stats = Modules.settings.getWorkDaysStats(year, monthNum, mainJob.scaleType, mainJob.scaleStart);
-            const baseDailyRate = mainJob.baseSalary > 0 ? (mainJob.baseSalary / (stats.full || 1)) : 0;
+            const baseDailyRate = mainJob.baseSalary > 0 ? (parseFloat(mainJob.baseSalary) / (stats.full || 1)) : 0;
 
             let diasTrabalhados = 0; let diasFolga = 0; let diasPlanejados = 0;
             let totalGastos = 0; let totalLiquido = 0;
@@ -370,7 +502,7 @@ const Modules = {
 
                     let vlDiaria = 0;
                     let liquido = 0;
-                    let gastos = parseFloat(entry.expenses) || 0;
+                    let gastos = parseFloat(entry.expenses || 0);
 
                     if (status === 'worked') {
                         vlDiaria = entry.value !== undefined && entry.value !== '' ? parseFloat(entry.value) : baseDailyRate;
@@ -396,13 +528,13 @@ const Modules = {
             }
             tableHTML += `</tbody></table>`;
 
-            if(!hasRecords) return alert("Não há registros ou dias programados na escala neste mês para exportar.");
+            if(!hasRecords) return alert("Não há registos ou dias programados na escala neste mês para exportar.");
 
             const pdfContainer = document.createElement('div');
             pdfContainer.innerHTML = `
                 <div style="padding: 40px; font-family: 'Helvetica', sans-serif; color: #333;">
                     <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
-                        <h1 style="color: #2563eb; margin: 0;">Relatório de Fechamento de Diárias</h1>
+                        <h1 style="color: #2563eb; margin: 0;">Relatório de Fecho de Diárias</h1>
                         <h3 style="color: #64748b; margin-top: 5px; text-transform: capitalize;">Mês de Referência: ${monthName}</h3>
                     </div>
 
@@ -421,7 +553,7 @@ const Modules = {
                     <h4 style="margin-bottom: 10px; color: #475569;">Extrato Detalhado de Diárias</h4>
                     ${tableHTML}
                     
-                    <p style="text-align: center; margin-top: 50px; font-size: 10px; color: #94a3b8;">Gerado via Controle de Diárias Pro</p>
+                    <p style="text-align: center; margin-top: 50px; font-size: 10px; color: #94a3b8;">Gerado via Controlo de Diárias Pro</p>
                 </div>
             `;
 
@@ -433,11 +565,12 @@ const Modules = {
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            alert("Gerando Relatório... Isso pode levar alguns segundos.");
+            alert("A gerar Relatório... Isto pode demorar alguns segundos.");
             html2pdf().set(configuracoesPDF).from(pdfContainer).save().then(() => { alert("✅ PDF gerado com sucesso!"); });
         }
     },
 
+    // --- CORREÇÃO MATEMÁTICA NO DASHBOARD ---
     dashboard: {
         render() {
             const container = document.getElementById('app-content');
@@ -454,16 +587,22 @@ const Modules = {
             
             Object.entries(entries).forEach(([dateKey, entry]) => {
                 if (dateKey.startsWith(filterMonth)) {
+                    // Prevenção robusta com parseFloat para garantir cálculo matemático
+                    const val = parseFloat(entry.value || 0);
+                    const exp = parseFloat(entry.expenses || 0);
+
                     if (entry.status === 'worked') {
                         diasTrabalhados++;
-                        currentGross += (entry.value || 0);
-                        currentExp += (entry.expenses || 0);
-                        currentNet += (entry.value || 0) - (entry.expenses || 0);
-                    } else if (entry.status === 'off') diasFolga++;
+                        currentGross += val;
+                        currentExp += exp;
+                        currentNet += (val - exp);
+                    } else if (entry.status === 'off') {
+                        diasFolga++;
+                    }
                 }
             });
 
-            const target = mainJob.baseSalary || 1;
+            const target = parseFloat(mainJob.baseSalary) || 1;
             let percent = ((currentNet / target) * 100).toFixed(0);
             if (percent > 100) percent = 100;
             if (percent < 0) percent = 0;
@@ -510,7 +649,7 @@ const Modules = {
                             <span class="card-icon-main">💼</span>
                             <div class="card-info-text">
                                 <h3>Meus Empregos</h3>
-                                <small>Gerencie escalas, salários e cores</small>
+                                <small>Gerir escalas, salários e cores</small>
                             </div>
                         </div>
                         <span class="card-arrow">›</span>
@@ -520,7 +659,7 @@ const Modules = {
                         <div class="card-title-row">
                             <span class="card-icon-main">🎨</span>
                             <div class="card-info-text">
-                                <h3>Aparência do App</h3>
+                                <h3>Aparência da App</h3>
                                 <small>Modo claro, noturno ou rosa</small>
                             </div>
                         </div>
@@ -532,7 +671,7 @@ const Modules = {
                             <span class="card-icon-main">💾</span>
                             <div class="card-info-text">
                                 <h3>Backups Seguros</h3>
-                                <small>Salvar, restaurar ou excluir dados</small>
+                                <small>Guardar, restaurar ou excluir dados</small>
                             </div>
                         </div>
                         <span class="card-arrow">›</span>
@@ -541,7 +680,6 @@ const Modules = {
             `;
         },
 
-        // --- GESTOR DE BACKUPS (COM IMPORTAÇÃO E EXPORTAÇÃO DE ARQUIVOS) ---
         openBackupModal() {
             const backups = JSON.parse(localStorage.getItem('@diarias_pro_backups')) || [];
             
@@ -565,23 +703,22 @@ const Modules = {
                 });
             }
 
-            // Adicionado a seção com botões para Arquivo Físico
             const html = `
                 <button class="btn-close-modal" onclick="UI.closeModal()">✕</button>
                 <div class="modal-header">
-                    <h3>Gerenciador de Backups</h3>
-                    <p>Mantenha seus dados seguros na memória ou no aparelho.</p>
+                    <h3>Gestor de Backups</h3>
+                    <p>Mantenha os seus dados seguros na memória ou no aparelho.</p>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button class="btn-save" style="flex: 1; padding: 12px; font-size: 0.9rem; background: var(--text-main); color: var(--card-bg);" onclick="Modules.settings.exportBackupToFile()">📥 Baixar Arquivo</button>
-                    <button class="btn-clear" style="flex: 1; margin: 0; padding: 12px; font-size: 0.9rem; border-color: var(--primary); color: var(--primary);" onclick="document.getElementById('import-file').click()">📂 Abrir Arquivo</button>
+                    <button class="btn-save" style="flex: 1; padding: 12px; font-size: 0.9rem; background: var(--text-main); color: var(--card-bg);" onclick="Modules.settings.exportBackupToFile()">📥 Baixar Ficheiro</button>
+                    <button class="btn-clear" style="flex: 1; margin: 0; padding: 12px; font-size: 0.9rem; border-color: var(--primary); color: var(--primary);" onclick="document.getElementById('import-file').click()">📂 Abrir Ficheiro</button>
                     <input type="file" id="import-file" style="display:none;" accept=".json" onchange="Modules.settings.importBackupFromFile(event)">
                 </div>
 
                 <button class="btn-save" style="margin-bottom: 20px;" onclick="Modules.settings.createBackup()">+ Criar Backup Rápido (Memória)</button>
                 
-                <h4 style="margin-bottom: 10px;">Backups Salvos na Memória</h4>
+                <h4 style="margin-bottom: 10px;">Backups Guardados na Memória</h4>
                 <div class="job-list">
                     ${backupsHTML}
                 </div>
@@ -589,14 +726,11 @@ const Modules = {
             UI.openModal(html);
         },
 
-        // Função: Baixa o banco de dados como um arquivo .json para o celular
         exportBackupToFile() {
             const currentData = JSON.parse(localStorage.getItem('@diarias_pro_data')) || {};
-            // Cria um arquivo (Blob) em memória contendo o texto JSON
             const blob = new Blob([JSON.stringify(currentData, null, 2)], {type: "application/json"});
             const url = URL.createObjectURL(blob);
             
-            // Força o clique no celular para iniciar o download
             const a = document.createElement('a');
             a.href = url;
             const dateStr = new Date().toISOString().split('T')[0];
@@ -610,7 +744,6 @@ const Modules = {
             }, 0);
         },
 
-        // Função: Lê o arquivo .json escolhido na pasta do celular e restaura o banco de dados
         importBackupFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -621,21 +754,21 @@ const Modules = {
                     const importedData = JSON.parse(e.target.result);
                     
                     if (importedData && typeof importedData === 'object') {
-                        if (confirm("Deseja substituir seus dados atuais por este arquivo de backup que você selecionou?")) {
+                        if (confirm("Deseja substituir os seus dados atuais por este ficheiro de backup que selecionou?")) {
                             localStorage.setItem('@diarias_pro_data', JSON.stringify(importedData));
-                            app.state.data = Storage.getData(); // Recarrega a memória viva
-                            alert("Backup do arquivo carregado com sucesso!");
+                            app.state.data = Storage.getData();
+                            alert("Backup do ficheiro carregado com sucesso!");
                             UI.closeModal();
                             app.navigate('calendar');
                         }
                     } else {
-                        alert("Arquivo inválido. Escolha um arquivo de backup gerado pelo aplicativo.");
+                        alert("Ficheiro inválido. Escolha um ficheiro de backup gerado pela aplicação.");
                     }
                 } catch (error) {
-                    alert("Erro ao ler o arquivo. Certifique-se de que escolheu um arquivo com final .json válido.");
+                    alert("Erro ao ler o ficheiro. Certifique-se de que escolheu um ficheiro com final .json válido.");
                 }
             };
-            reader.readAsText(file); // Manda ler como texto
+            reader.readAsText(file); 
         },
 
         createBackup() {
@@ -650,7 +783,7 @@ const Modules = {
         },
 
         restoreBackup(index) {
-            if(confirm("Tem certeza? Isso vai substituir seus dados atuais pelos dados deste backup da memória!")) {
+            if(confirm("Tem a certeza? Isto vai substituir os seus dados atuais pelos dados deste backup da memória!")) {
                 const backups = JSON.parse(localStorage.getItem('@diarias_pro_backups')) || [];
                 const backupToRestore = backups[index];
                 
@@ -749,7 +882,7 @@ const Modules = {
                 
                 <div class="expense-box" id="calc-result" style="text-align: left;"></div>
                 
-                <button class="btn-save" onclick="Modules.settings.saveJob(${jobIndex})">Salvar Emprego</button>
+                <button class="btn-save" onclick="Modules.settings.saveJob(${jobIndex})">Guardar Emprego</button>
             `;
             UI.openModal(html);
             this.updateProjected(); 
@@ -761,7 +894,7 @@ const Modules = {
                 <button class="btn-close-modal" onclick="UI.closeModal()">✕</button>
                 <div class="modal-header">
                     <h3>Escolher Tema</h3>
-                    <p>O aplicativo muda de cor instantaneamente.</p>
+                    <p>A aplicação muda de cor instantaneamente.</p>
                 </div>
                 <div class="theme-options">
                     <label class="theme-radio">
