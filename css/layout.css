@@ -1,43 +1,88 @@
+/* --- CABEÇALHO --- */
 #main-header {
-    background: var(--primary); color: white;
-    padding: 30px 20px 20px 20px; border-radius: 0 0 30px 30px;
-    text-align: center; position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: var(--primary); color: white; padding: 30px 20px 20px 20px; 
+    border-radius: 0 0 30px 30px; text-align: center; position: sticky; 
+    top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: all 0.3s;
 }
-
 .summary-card h2 { font-size: 2.2rem; margin-top: 5px; color: white; }
 .header-details { display: flex; justify-content: center; gap: 20px; margin-top: 15px; background: rgba(255,255,255,0.15); padding: 10px; border-radius: 15px; }
 .detail-green { color: #86efac; font-weight: bold; } 
 .detail-red { color: #fca5a5; font-weight: bold; }   
+.header-stats-row { display: flex; justify-content: space-around; font-size: 0.8rem; margin-top: 10px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 20px;}
 
-#app-content { padding: 20px 15px 100px 15px; }
+#app-content { padding: 20px 15px 100px 15px; flex: 1; }
 
-/* Menu Inferior (Pílula) - Agora obedece o modo noturno! */
-.bottom-nav {
+/* --- NAVEGAÇÃO (MOBILE PADRÃO) --- */
+.app-nav {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: var(--card-bg); /* Responde ao tema */
-    display: flex; gap: 15px; padding: 10px 20px;
-    border-radius: 50px; box-shadow: var(--shadow);
-    border: 1px solid var(--border-color); z-index: 999;
+    background: var(--card-bg); display: flex; flex-direction: row; gap: 10px; padding: 10px 20px;
+    border-radius: 50px; box-shadow: var(--shadow); border: 1px solid var(--border-color); 
+    z-index: 999; width: 90%; max-width: 500px; justify-content: space-between;
 }
+.nav-brand, .nav-text { display: none; } /* Oculto no telemóvel */
+.nav-menu { display: flex; width: 100%; justify-content: space-between; }
+.nav-item { background: transparent; border: none; font-size: 1.5rem; padding: 10px; border-radius: 50%; cursor: pointer; transition: all 0.3s; filter: grayscale(1); }
+.nav-item.active { background: var(--primary); filter: grayscale(0); transform: translateY(-5px); color: white;}
 
-.nav-item {
-    background: transparent; border: none; font-size: 1.5rem;
-    padding: 10px; border-radius: 50%; cursor: pointer;
-    transition: all 0.3s; filter: grayscale(1);
-}
-.nav-item.active { background: var(--primary); filter: grayscale(0); transform: translateY(-5px); }
-
-/* Calendário */
+/* --- CALENDÁRIO --- */
 .calendar-wrapper { display: flex; flex-direction: column; gap: 30px; }
-.month-title { text-transform: capitalize; margin-bottom: 15px; padding-left: 5px; border-left: 4px solid var(--primary); color: var(--text-main); }
+.month-header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-left: 5px; border-left: 4px solid var(--primary);}
+.month-title { text-transform: capitalize; color: var(--text-main); }
+.btn-multi-select { background: var(--primary-light); color: var(--primary); border: none; padding: 5px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem;}
+
+.weekdays-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; font-size: 0.8rem; font-weight: bold; color: var(--text-muted); margin-bottom: 8px; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-.day-cell {
-    aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
-    background: var(--card-bg); color: var(--text-main); border-radius: 8px; font-weight: 500;
-    box-shadow: var(--shadow); border: 1px solid var(--border-color); cursor: pointer;
-}
+
+.day-cell { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: var(--card-bg); color: var(--text-main); border-radius: 8px; font-weight: 500; box-shadow: var(--shadow); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.1s; }
+.day-cell:active { transform: scale(0.9); }
 .day-cell.empty { background: transparent; box-shadow: none; border: none; cursor: default; }
-.day-cell.worked { background-color: var(--success); color: white; border: none;}
-.day-cell.off { background-color: var(--danger); color: white; border: none;}
-.day-cell.planned { background-color: var(--primary); color: white; border: none;}
+
+.day-cell.worked { background-color: var(--success); color: white; border-color: var(--success); }
+.day-cell.off { background-color: var(--danger); color: white; border-color: var(--danger); }
+.day-cell.planned { background-color: var(--primary); color: white; border-color: var(--primary); }
+.day-cell.transferred { background-color: var(--warning); color: white; border-color: var(--warning); }
+
+.micro-dot-expense { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: #fff; border-radius: 50%; }
+.day-cell:not(.worked):not(.off):not(.planned):not(.transferred) .micro-dot-expense { background: var(--danger); }
+.micro-text-val { position: absolute; top: 2px; right: 3px; font-size: 0.55rem; opacity: 0.8; font-weight: bold; color: inherit; }
+.day-cell.multi-selected { border: 3px solid var(--text-main) !important; transform: scale(0.9); box-shadow: 0 0 10px var(--text-main); }
+
+/* =========================================================
+   REGRAS PARA DASHBOARD WEB PROFISSIONAL (ECRÃS GRANDES)
+========================================================= */
+@media (min-width: 800px) {
+    .app-container { flex-direction: row; height: 100vh; overflow: hidden; }
+    
+    /* Barra Lateral Esquerda */
+    .app-nav {
+        position: static; transform: none; width: 260px; height: 100vh;
+        border-radius: 0; box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+        flex-direction: column; justify-content: flex-start; padding: 30px 20px;
+        border: none; border-right: 1px solid var(--border-color);
+        background: var(--card-bg); z-index: 500;
+    }
+    
+    .nav-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; padding-left: 10px; }
+    .brand-icon { font-size: 2rem; }
+    .brand-text { font-size: 1.4rem; font-weight: 900; color: var(--primary); }
+    
+    .nav-menu { flex-direction: column; gap: 15px; }
+    .nav-item { display: flex; align-items: center; gap: 15px; font-size: 1.1rem; padding: 15px 20px; border-radius: 12px; font-weight: 600; color: var(--text-muted); justify-content: flex-start; }
+    .nav-text { display: inline-block; }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); transform: none; }
+    
+    /* Área Principal */
+    .main-wrapper { flex: 1; overflow-y: auto; background-color: var(--bg-color); }
+    
+    /* Cabeçalho Compacto (Top Bar) */
+    #main-header { padding: 15px 40px; border-radius: 0; position: sticky; top: 0; background: var(--card-bg); color: var(--text-main); border-bottom: 1px solid var(--border-color); box-shadow: none; z-index: 100; }
+    .header-content { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 1200px; margin: 0 auto; }
+    .summary-card { display: flex; align-items: center; gap: 20px; }
+    .summary-card small { color: var(--text-muted); font-size: 1rem; }
+    .summary-card h2 { color: var(--text-main); font-size: 1.8rem; margin: 0; }
+    .header-details { background: var(--bg-color); border: 1px solid var(--border-color); margin: 0; padding: 8px 15px; gap: 15px; }
+    .header-stats-row { display: none; } /* Oculto no PC para não poluir, pois as abas já mostram */
+
+    #app-content { padding: 40px; max-width: 1200px; margin: 0 auto; }
+    .calendar-wrapper { max-width: 800px; margin: 0 auto; }
+}
